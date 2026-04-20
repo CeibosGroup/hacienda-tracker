@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#060e06">
+<title>Movimientos Hacienda — Ceibos</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Serif+Display&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Mono',monospace;background:#060e06;color:#c8e6c8;min-height:100vh;padding:20px 16px;}
+  h1{font-family:'DM Serif Display',serif;font-size:24px;color:#a5d6a7;letter-spacing:-0.5px;margin-bottom:4px;}
+  .sub{color:#4a7a4a;font-size:12px;margin-bottom:24px;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+  .kpi{background:#0d1e0d;border:1px solid #1e3a1e;border-radius:10px;padding:14px 16px;}
+  .kpi-label{font-size:10px;color:#4a7a4a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+  .kpi-value{font-size:20px;font-weight:600;}
+  .kpi-sub{font-size:10px;color:#4a7a4a;margin-top:4px;}
+  .azul{color:#90caf9;} .verde{color:#81c784;} .rojo{color:#ef9a9a;}
+
+  .section{font-size:10px;font-weight:600;color:#4a7a4a;text-transform:uppercase;letter-spacing:1px;
+    border-bottom:1px solid #1e3a1e;padding-bottom:8px;margin:24px 0 14px;}
+
+  .msg{font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:10px;display:none;}
+  .msg.ok{background:#0a2a0a;color:#81c784;border:1px solid #1e4a1e;display:block;}
+  .msg.err{background:#2a0a0a;color:#ef9a9a;border:1px solid #4a1e1e;display:block;}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .form-grid-2{display:grid;grid-template-columns:1fr 80px;gap:10px;margin-bottom:12px;}
+  label{font-size:10px;color:#4a7a4a;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
+  select,input[type=number]{width:100%;background:#0e1f0e;border:1px solid #2a4a2a;border-radius:5px;
+    color:#d4f0d4;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;}
+  select:focus,input:focus{border-color:#4caf50;}
+  select option{background:#0e1f0e;}
+
+  .tipo-toggle{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #2a4a2a;border-radius:5px;overflow:hidden;margin-bottom:14px;}
+  .tipo-btn{padding:9px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;border:none;
+    background:#0e1f0e;color:#4a7a4a;transition:all .15s;}
+  .tipo-btn.active-compra{background:#0a2a0a;color:#81c784;}
+  .tipo-btn.active-venta{background:#2a0a0a;color:#ef9a9a;}
+
+  .btn-reg{width:100%;background:#2e7d32;color:#d4f0d4;border:none;border-radius:5px;
+    padding:11px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}
+  .btn-reg:hover{background:#388e3c;}
+  .btn-reg:disabled{background:#1a2a1a;color:#2a4a2a;cursor:not-allowed;}
+
+  .table-wrap{overflow-x:auto;border-radius:8px;border:1px solid #1e3a1e;margin-bottom:8px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{text-align:left;color:#4a7a4a;font-size:10px;text-transform:uppercase;letter-spacing:1px;
+    padding:8px 10px;border-bottom:1px solid #1e3a1e;background:#0d1f0d;white-space:nowrap;}
+  td{padding:9px 10px;border-bottom:1px solid #1e2d1e;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  .num{text-align:right;}
+  .empty{text-align:center;color:#2a4a2a;padding:24px;font-size:12px;}
+
+  .badge{padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;}
+  .badge-compra{background:#0a2a0a;color:#81c784;border:1px solid #1e4a1e;}
+  .badge-venta{background:#2a0a0a;color:#ef9a9a;border:1px solid #4a1e1e;}
+  .badge-tern{background:#0a2a0a;color:#81c784;border:1px solid #1e4a1e;}
+  .badge-vaca{background:#0a1e2a;color:#90caf9;border:1px solid #1a3a4a;}
+
+  .prog-wrap{background:#0d1f0d;border-radius:4px;height:5px;min-width:50px;}
+  .prog-bar{height:5px;border-radius:4px;transition:width .4s;}
+
+  .btn-del{background:none;border:none;cursor:pointer;color:#2a4a2a;font-size:13px;padding:2px 6px;border-radius:4px;}
+  .btn-del:hover{background:#1a0a0a;color:#ef9a9a;}
+
+  .loading{text-align:center;color:#2a4a2a;padding:40px;font-size:12px;}
+
+  @media(max-width:480px){
+    .kpi-value{font-size:16px;}
+    .kpi-grid{gap:8px;}
+  }
+</style>
+</head>
+<body>
+
+<h1>Movimientos Hacienda</h1>
+<div class="sub">Ceibos Group Uruguay</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-label">Forecast compras</div>
+    <div class="kpi-value azul" id="k-forecast">— cab.</div>
+    <div class="prog-wrap" style="margin-top:8px"><div class="prog-bar" id="k-bar" style="width:0%;background:#378ADD"></div></div>
+    <div class="kpi-sub" id="k-pct">0% ejecutado</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Ejecutado</div>
+    <div class="kpi-value verde" id="k-exec">0 cab.</div>
+    <div class="kpi-sub" id="k-movs">0 movimientos</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Saldo</div>
+    <div class="kpi-value azul" id="k-saldo">— cab.</div>
+    <div class="kpi-sub" id="k-saldo-sub"></div>
+  </div>
+</div>
+
+<!-- Formulario -->
+<div class="section">Registrar movimiento</div>
+<div id="msg-area"></div>
+
+<div class="tipo-toggle">
+  <button class="tipo-btn active-compra" id="btn-compra" onclick="setTipo('Compra')">▼ Compra</button>
+  <button class="tipo-btn" id="btn-venta" onclick="setTipo('Venta')">▲ Venta</button>
+</div>
+
+<div class="form-grid">
+  <div>
+    <label>Campo</label>
+    <select id="f-campo" onchange="onCampoChange()">
+      <option value="">— Seleccioná —</option>
+    </select>
+  </div>
+  <div>
+    <label>Categoría</label>
+    <select id="f-cat">
+      <option value="">— Seleccioná —</option>
+    </select>
+  </div>
+</div>
+<div class="form-grid-2">
+  <div>
+    <label>Cabezas</label>
+    <input type="number" id="f-cab" min="1" placeholder="0">
+  </div>
+  <div style="display:flex;align-items:flex-end">
+    <button class="btn-reg" id="btn-reg" onclick="registrar()">+ Reg.</button>
+  </div>
+</div>
+
+<!-- Tabla saldo -->
+<div class="section">Saldo por campo y categoría</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Campo</th>
+        <th>Categoría</th>
+        <th class="num">Forecast</th>
+        <th class="num">Comprado</th>
+        <th class="num">Saldo</th>
+        <th>Avance</th>
+      </tr>
+    </thead>
+    <tbody id="saldo-body"><tr><td colspan="6" class="loading">Cargando...</td></tr></tbody>
+  </table>
+</div>
+
+<!-- Historial -->
+<div class="section">Historial de movimientos</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Campo</th>
+        <th>Cat.</th>
+        <th class="num">Cab.</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="hist-body"><tr><td colspan="6" class="loading">Cargando...</td></tr></tbody>
+  </table>
+</div>
+
+<div style="margin-top:16px;color:#1e3a1e;font-size:10px;text-align:right;">
+  Datos sincronizados con Google Sheets
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbzFKXfUIPiSfIJtVOtUbRrtI9yUNWkgkcXzEFMHaHzFfW-raeZe4WWEjVHDK7PX_roH/exec";
+
+const FORECAST = [
+  {campo:"DON JUAN DEL TALA", cat:"Terneros General", cab:800},
+  {campo:"LA CAUTIVA TECNO",  cat:"Terneros General", cab:3000},
+  {campo:"BICHADERO TECNO",   cat:"Terneros General", cab:2800},
+  {campo:"EL JUNCAL",         cat:"Vaca Invernada",   cab:600},
+  {campo:"LOS TILOS",         cat:"Vaca Invernada",   cab:300},
+  {campo:"DON VENANCIO",      cat:"Vaca Invernada",   cab:800},
+  {campo:"BICHADERO TECNO",   cat:"Vaca Invernada",   cab:900},
+  {campo:"DON JUAN DEL TALA", cat:"Vaca Invernada",   cab:500},
+];
+
+const CAMPOS = [...new Set(FORECAST.map(f=>f.campo))];
+const CATS_BY_CAMPO = {};
+FORECAST.forEach(f=>{
+  if(!CATS_BY_CAMPO[f.campo]) CATS_BY_CAMPO[f.campo]=[];
+  if(!CATS_BY_CAMPO[f.campo].includes(f.cat)) CATS_BY_CAMPO[f.campo].push(f.cat);
+});
+
+let movimientos = [];
+let tipoActual = "Compra";
+
+const fmt = n => Math.round(n).toLocaleString('es-UY');
+
+// Poblar campos
+const campoSel = document.getElementById('f-campo');
+CAMPOS.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; campoSel.appendChild(o); });
+
+function onCampoChange(){
+  const campo = campoSel.value;
+  const catSel = document.getElementById('f-cat');
+  catSel.innerHTML='<option value="">— Seleccioná —</option>';
+  if(campo && CATS_BY_CAMPO[campo]){
+    CATS_BY_CAMPO[campo].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; catSel.appendChild(o); });
+  }
+}
+
+function setTipo(t){
+  tipoActual = t;
+  document.getElementById('btn-compra').className = 'tipo-btn' + (t==='Compra'?' active-compra':'');
+  document.getElementById('btn-venta').className  = 'tipo-btn' + (t==='Venta'?' active-venta':'');
+}
+
+function showMsg(txt, type){
+  const el = document.getElementById('msg-area');
+  el.innerHTML = `<div class="msg ${type}">${txt}</div>`;
+  setTimeout(()=>{ el.innerHTML=''; }, 3500);
+}
+
+async function cargar(){
+  try{
+    const r = await fetch(API + "?t=" + Date.now());
+    movimientos = await r.json();
+  }catch(e){ movimientos=[]; }
+  render();
+}
+
+async function registrar(){
+  const campo = campoSel.value;
+  const cat   = document.getElementById('f-cat').value;
+  const cab   = parseInt(document.getElementById('f-cab').value)||0;
+  if(!campo||!cat||cab<=0){ showMsg('Completá todos los campos.','err'); return; }
+
+  if(tipoActual==='Compra'){
+    const fc = FORECAST.find(f=>f.campo===campo&&f.cat===cat);
+    const ejecutado = movimientos.filter(m=>m.tipo==='Compra'&&m.campo===campo&&m.cat===cat).reduce((s,m)=>s+Number(m.cab),0);
+    const saldo = fc ? fc.cab - ejecutado : null;
+    if(fc && cab > saldo){ showMsg(`Superás el forecast: saldo disponible ${fmt(saldo)} cab. en ${campo} — ${cat}.`,'err'); return; }
+  }
+
+  const btn = document.getElementById('btn-reg');
+  btn.disabled = true; btn.textContent = '...';
+
+  const fecha = new Date().toLocaleDateString('es-UY',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const body = { action:'add', id: Date.now(), fecha, tipo: tipoActual, campo, cat, cab };
+
+  try{
+    await fetch(API, { method:'POST', body: JSON.stringify(body) });
+    showMsg(`${tipoActual} registrada: ${fmt(cab)} cab. en ${campo} — ${cat}`,'ok');
+    campoSel.value='';
+    document.getElementById('f-cat').innerHTML='<option value="">— Seleccioná —</option>';
+    document.getElementById('f-cab').value='';
+    await cargar();
+  }catch(e){
+    showMsg('Error al guardar. Revisá tu conexión.','err');
+  }
+  btn.disabled=false; btn.textContent='+ Reg.';
+}
+
+async function borrar(id){
+  if(!confirm('¿Eliminar este movimiento?')) return;
+  await fetch(API, { method:'POST', body: JSON.stringify({action:'delete', id}) });
+  await cargar();
+}
+
+function render(){
+  const totalForecast = FORECAST.reduce((s,f)=>s+f.cab,0);
+  const totalComprado = movimientos.filter(m=>m.tipo==='Compra').reduce((s,m)=>s+Number(m.cab),0);
+  const saldo = totalForecast - totalComprado;
+  const pct = Math.min(100, Math.round(totalComprado/totalForecast*100));
+
+  document.getElementById('k-forecast').textContent = fmt(totalForecast)+' cab.';
+  document.getElementById('k-exec').textContent = fmt(totalComprado)+' cab.';
+  document.getElementById('k-movs').textContent = movimientos.length+' movimiento'+(movimientos.length!==1?'s':'');
+  document.getElementById('k-bar').style.width = pct+'%';
+  document.getElementById('k-pct').textContent = pct+'% ejecutado';
+
+  const kSaldo = document.getElementById('k-saldo');
+  kSaldo.textContent = fmt(Math.abs(saldo))+' cab.';
+  kSaldo.className = 'kpi-value '+(saldo<0?'rojo':saldo<totalForecast*0.2?'verde':'azul');
+  document.getElementById('k-saldo-sub').textContent = saldo<0?'EXCEDIDO':saldo===0?'Forecast cumplido ✓':'Por comprar';
+
+  // Tabla saldo
+  const sb = document.getElementById('saldo-body');
+  sb.innerHTML='';
+  FORECAST.forEach(f=>{
+    const exec = movimientos.filter(m=>m.tipo==='Compra'&&m.campo===f.campo&&m.cat===f.cat).reduce((s,m)=>s+Number(m.cab),0);
+    const sal  = f.cab - exec;
+    const pct  = Math.min(100, Math.round(exec/f.cab*100));
+    const sCol = sal<0?'#ef9a9a':sal===0?'#81c784':sal<f.cab*0.3?'#ffcc80':'#c8e6c8';
+    const bCol = pct>=100?'#e24b4a':pct>=70?'#ef9f27':'#378ADD';
+    const catBadge = f.cat==='Terneros General'
+      ? '<span class="badge badge-tern">Terneros</span>'
+      : '<span class="badge badge-vaca">Vaca Inv.</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${f.campo}</td><td>${catBadge}</td>
+      <td class="num">${fmt(f.cab)}</td>
+      <td class="num">${fmt(exec)}</td>
+      <td class="num" style="color:${sCol};font-weight:600">${fmt(sal)}</td>
+      <td><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%;background:${bCol}"></div></div>
+      <div style="font-size:9px;color:#4a7a4a;margin-top:2px">${pct}%</div></td>`;
+    sb.appendChild(tr);
+  });
+
+  // Historial
+  const hb = document.getElementById('hist-body');
+  if(movimientos.length===0){
+    hb.innerHTML='<tr><td colspan="6" class="empty">Sin movimientos registrados aún</td></tr>';
+    return;
+  }
+  hb.innerHTML='';
+  [...movimientos].reverse().forEach(m=>{
+    const tipoBadge = m.tipo==='Compra'
+      ? '<span class="badge badge-compra">Compra</span>'
+      : '<span class="badge badge-venta">Venta</span>';
+    const catBadge = m.cat==='Terneros General'
+      ? '<span class="badge badge-tern">Terneros</span>'
+      : '<span class="badge badge-vaca">Vaca Inv.</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${m.fecha}</td><td>${tipoBadge}</td>
+      <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis">${m.campo}</td>
+      <td>${catBadge}</td>
+      <td class="num" style="font-weight:600">${fmt(m.cab)}</td>
+      <td><button class="btn-del" onclick="borrar('${m.id}')">✕</button></td>`;
+    hb.appendChild(tr);
+  });
+}
+
+cargar();
+</script>
+</body>
+</html>
